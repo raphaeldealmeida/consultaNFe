@@ -66,7 +66,9 @@ class Nfe
 
     function ce(){
         header('Content-Type: text/html; charset=ISO-8859-15');
-        $numero_dae = 201606564771;//, 201604873698 $_GET["codigo_selo"];
+        $numero_dae = 201606564771;
+        $numero_dae = 201604873698;
+        $numero_dae = 201929084749;
         $xx = 'http://www2.sefaz.ce.gov.br/sitram-internet/masterDetailNotaFiscal.do?method=searchRelatorioLista&codigo='.$numero_dae.'&from=NotaFiscalForm';
         $cURL = curl_init();
         curl_setopt($cURL,CURLOPT_URL,$xx);
@@ -86,7 +88,6 @@ class Nfe
         $xpath = new \DomXPath($page);
 
         $node = $xpath->evaluate('/html/body/div[1]/div[2]/div/section/form[2]/div[3]/div[2]/div[1]/div[2]/div[2]');
-
         echo "Chave de acesso: {$node[0]->textContent}" . PHP_EOL;
 
         $expression = '/html/body/div[1]/div[2]/div/section/form[2]/div[3]/div[2]/div[1]/div[11]/div[2]';
@@ -94,58 +95,39 @@ class Nfe
         $valorTotal = trim($node[0]->textContent);
         echo "Valor Total: {$valorTotal}" . PHP_EOL;
 
-        $expression = '/html/body/div[1]/div[2]/div/section/form[2]/span/div/div[2]/table/tbody';
-        $node = $xpath->evaluate($expression);
-
-        $produtos = $node[0]->childNodes;
-        echo count($produtos);
-//        foreach ($produtos as $produto){
-//            echo $produto->textContent . PHP_EOL;
-//        }
 
         $client = new Client(['cookies' => true]);
-        $chaveDeAcesso = '43181012384687000438651040002069031002069033';
-        $chaveDeAcesso = '43181012384687000438651020003078229003078222';
-        $chaveDeAcesso = '43181093209765016200650040001417721010722180';
-        $chaveDeAcesso = '43180907718633001584650050002139521005139526';
-        $chaveDeAcesso = '43180905316123000150650020000091901000184323';
 
         $url = "http://www2.sefaz.ce.gov.br/sitram-internet/dwr/call/plaincall/NotaFiscalAjaxFacade.obterItens.dwr";
         $response = $client->post($url, [
-            'callCount' => '1',
-            'windowName' => '',
-            'c0-scriptName' => 'NotaFiscalAjaxFacade',
-            'c0-methodName' => 'obterItens',
-            'c0-id' => '0',
-            'c0-param0' => 'string:201606564771',
-            'c0-param1' => 'number:0',
-            'c0-param2' => 'string:',
-            'batchId' => '1',
-            'page'=> '%2Fsitram-internet%2FmasterDetailNotaFiscal.do%3Fmethod%3DsearchRelatorioLista%26codigo%3D201606564771%26from%3DNotaFiscalForm',
-            'httpSessionId' =>  'HyVsYefZ7NqI1ammOoDa454g.dpeap038-inst01',
-            'scriptSessionId' => '061FE497F3B64DCADCCC37B57CA7309E',
+            'form_params' => [
+                'callCount' => '1',
+                'windowName' => '',
+                'c0-scriptName' => 'NotaFiscalAjaxFacade',
+                'c0-methodName' => 'obterItens',
+                'c0-id' => '0',
+                'c0-param0' => "string:{$numero_dae}",
+                'c0-param1' => 'number:0',
+                'c0-param2' => 'string:',
+                'batchId' => '1',
+                'page'=> '%2Fsitram-internet%2FmasterDetailNotaFiscal.do%3Fmethod%3DsearchRelatorioLista%26codigo%3D201606564771%26from%3DNotaFiscalForm',
+                'httpSessionId' =>  'HyVsYefZ7NqI1ammOoDa454g.dpeap038-inst01',
+                'scriptSessionId' => '061FE497F3B64DCADCCC37B57CA7309E',
             ]
-        );
+        ]);
 
-echo (string)$response->getBody();
+        $retorno =  (string)$response->getBody();
 
-//        $crawler = new Crawler((string)$response->getBody());
+        $retorno = preg_replace('/("(.*?)"|(\w+))(\s*:\s*)\+?(0+(?=\d))?(".*?"|.)/s', '"$2$3"$4$6', $retorno);
 
-//        $iframe = $crawler->filter('#iframeConteudo')->attr('src');
-//        $response = $client->get($iframe);
-//        $crawler = new Crawler((string) $response->getBody());
-//
-//        $nfe = [
-//            'cabecalho' => $this->getCabecalho($crawler),
-//            'emitente' => $this->getEmitente($crawler),
-//            'produtos' => $this->getProdutos($crawler),
-//        ];
-//
-//        var_dump($nfe);
-
-
-
-
+        $inicio = strpos($retorno, '[');
+        $tamanho = strrpos($retorno, ']') - $inicio + 1;
+        $itens =  json_decode(substr($retorno, $inicio, $tamanho ), true );
+        // echo json_last_error_msg() . PHP_EOL;
+        // echo json_last_error() . PHP_EOL;
+        foreach ($itens as $item){
+            echo "{$item['codigo']} - {$item['descricao']} - {$item['quantidade']} - {$item['valorUnitario']}" . PHP_EOL;
+        }
     }
 
 
